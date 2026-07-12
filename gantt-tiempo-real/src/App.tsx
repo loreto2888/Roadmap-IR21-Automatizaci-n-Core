@@ -158,7 +158,7 @@ function formatProjectDate(iso: string) {
   const weekdays = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
   const date = toDate(iso)
   const [year, month, day] = iso.split('-')
-  return `${weekdays[date.getDay()]} ${day}-${month}-${year.slice(2)}`
+  return `${weekdays[date.getDay()]} ${day}-${month}-${year}`
 }
 
 function durationLabel(start: string, end: string) {

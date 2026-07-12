@@ -254,7 +254,7 @@ input[type='range'] {
   border-radius: 8px 8px 0 0;
   background: #eef3f0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: none;
 }
@@ -286,7 +286,7 @@ input[type='range'] {
   border-bottom: 1px solid var(--border);
   background: rgba(255, 253, 248, 0.96);
   color: var(--accent-strong);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
 }
 
@@ -347,6 +347,7 @@ input[type='range'] {
 .task-copy span {
   color: var(--text);
   font-weight: 700;
+  font-size: 12px;
 }
 
 .duration-meta,
@@ -354,7 +355,7 @@ input[type='range'] {
 .resource-meta,
 .date-meta {
   color: var(--text);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
 }
 
