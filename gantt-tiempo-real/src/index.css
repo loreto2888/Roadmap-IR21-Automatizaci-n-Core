@@ -1,0 +1,75 @@
+:root {
+  --text: #203039;
+  --muted: #68797d;
+  --bg: #eef4ef;
+  --panel: #fffdf8;
+  --panel-strong: #edf7f1;
+  --field: #f8fbf7;
+  --border: #cfdbd4;
+  --accent: #147d72;
+  --accent-strong: #075e58;
+  --bar: #2d8f83;
+  --done: #507b35;
+  --blocked: #c65a3a;
+  --pending: #9ca8a3;
+  --today: #d64d2a;
+  --chip: #dfece4;
+  --soft-shadow: 0 18px 50px rgba(34, 58, 48, 0.12);
+  --sans: Avenir Next, Aptos, Segoe UI, sans-serif;
+  --heading: Georgia, Cambria, serif;
+
+  font: 16px/1.45 var(--sans);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(20, 125, 114, 0.16), transparent 30%),
+    linear-gradient(135deg, #f7f1e6 0%, #eef4ef 42%, #e5f0ec 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100svh;
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(20, 125, 114, 0.32);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1,
+h2 {
+  color: var(--text);
+  font-family: var(--heading);
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 54px;
+  line-height: 0.98;
+}
+
+#root {
+  min-height: 100svh;
+}
