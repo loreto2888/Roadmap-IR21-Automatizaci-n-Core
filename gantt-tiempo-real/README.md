@@ -5,6 +5,7 @@ Aplicación web para visualizar y editar en tiempo real la Gantt del roadmap IR2
 ## URLs
 
 - Roadmap en GitHub: https://github.com/loreto2888/Roadmap-IR21-Automatizaci-n-Core
+- Gantt pública: https://loreto2888.github.io/Roadmap-IR21-Automatizaci-n-Core/
 - Código de la Gantt: https://github.com/loreto2888/Roadmap-IR21-Automatizaci-n-Core/tree/main/gantt-tiempo-real
 - Gantt local: http://localhost:5173/
 

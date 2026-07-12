@@ -119,6 +119,11 @@ function formatExcelDate(iso: string) {
   return `${day}-${month}-${year}`
 }
 
+function durationLabel(start: string, end: string) {
+  const days = diffDays(start, end)
+  return `${days} ${days === 1 ? 'día' : 'días'}`
+}
+
 function getThirdLabel(task: Task) {
   if (task.source.includes('Gestion') || task.phase === '0 Gestión') return 'Tipo'
   if (task.source.includes('Levantamiento') || task.phase === '1 Levantamiento') return 'Fecha'
@@ -255,12 +260,16 @@ function App() {
   const owners = Array.from(new Set(tasks.filter((task) => getThirdLabel(task) === 'Responsable').map((task) => task.owner).filter(Boolean)))
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? tasks[0]
   const visibleTasks = tasks.filter((task) => {
-    const haystack = `${task.id} ${task.title} ${task.owner} ${task.phase}`.toLowerCase()
+    const haystack = `${task.id} ${task.title} ${task.owner} ${task.phase} ${getThirdValue(task)} ${getDependencyValue(task)}`.toLowerCase()
     const matchesQuery = haystack.includes(deferredQuery.toLowerCase())
     const matchesPhase = phaseFilter === 'Todas' || task.phase === phaseFilter
     const matchesStatus = statusFilter === 'Todos' || task.status === statusFilter
     return matchesQuery && matchesPhase && matchesStatus
   })
+  const groupedTasks = Array.from(new Set(visibleTasks.map((task) => task.phase))).map((phase) => ({
+    phase,
+    tasks: visibleTasks.filter((task) => task.phase === phase),
+  }))
   const minStart = tasks.reduce((min, task) => (toDate(task.start) < toDate(min) ? task.start : min), tasks[0]?.start ?? todayIso)
   const maxEnd = tasks.reduce((max, task) => (toDate(task.end) > toDate(max) ? task.end : max), tasks[0]?.end ?? todayIso)
   const timelineStart = addDays(minStart, -3)
@@ -398,43 +407,57 @@ function App() {
 
           <div className="gantt" style={{ '--today-left': `${todayOffset}%` } as React.CSSProperties}>
             <div className="today-line" aria-hidden="true" />
-            {visibleTasks.map((task) => {
-              const left = (diffDays(timelineStart, task.start) / totalDays) * 100
-              const width = Math.max(0.8, (Math.max(1, diffDays(task.start, task.end) + 1) / totalDays) * 100)
-              const isSelected = selectedTask?.id === task.id
+            <div className="project-header">
+              <span>Nombre de tarea</span>
+              <span>Duración</span>
+              <span>Comienzo</span>
+              <span>Fin</span>
+              <span>Predecesoras</span>
+              <span>Cronograma</span>
+            </div>
+            {groupedTasks.map((group) => (
+              <section className="phase-group" key={group.phase}>
+                <div className="phase-summary">
+                  <span>▸ {group.phase}</span>
+                  <span>{durationLabel(group.tasks[0].start, group.tasks[group.tasks.length - 1].end)}</span>
+                  <span>{formatExcelDate(group.tasks[0].start)}</span>
+                  <span>{formatExcelDate(group.tasks[group.tasks.length - 1].end)}</span>
+                  <span />
+                  <span />
+                </div>
+                {group.tasks.map((task) => {
+                  const left = (diffDays(timelineStart, task.start) / totalDays) * 100
+                  const width = Math.max(0.8, (Math.max(1, diffDays(task.start, task.end) + 1) / totalDays) * 100)
+                  const isSelected = selectedTask?.id === task.id
 
-              return (
-                <button
-                  type="button"
-                  key={task.id}
-                  className={`gantt-row ${isSelected ? 'selected' : ''}`}
-                  onClick={() => setSelectedId(task.id)}
-                >
-                  <span className="task-copy">
-                    <b>{task.id}</b>
-                    <span>{task.title}</span>
-                  </span>
-                  <span className="rail">
-                    <span
-                      className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}
-                      style={{ left: `${left}%`, width: `${width}%` }}
+                  return (
+                    <button
+                      type="button"
+                      key={task.id}
+                      className={`gantt-row ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedId(task.id)}
                     >
-                      <span style={{ width: `${task.progress}%` }} />
-                    </span>
-                  </span>
-                  <span className="row-meta">
-                    <span>
-                      <b>{getThirdLabel(task)}</b>
-                      {getThirdValue(task) || 'Sin dato'}
-                    </span>
-                    <span>
-                      <b>{getDependencyLabel(task)}</b>
-                      {getDependencyValue(task)}
-                    </span>
-                  </span>
-                </button>
-              )
-            })}
+                      <span className="task-copy">
+                        <b>{task.id}</b>
+                        <span>{task.title}</span>
+                      </span>
+                      <span className="duration-meta">{durationLabel(task.start, task.end)}</span>
+                      <span className="date-meta">{formatExcelDate(task.start)}</span>
+                      <span className="date-meta">{formatExcelDate(task.end)}</span>
+                      <span className="predecessor-meta">{getDependencyValue(task)}</span>
+                      <span className="rail">
+                        <span
+                          className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        >
+                          <span style={{ width: `${task.progress}%` }} />
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </section>
+            ))}
           </div>
         </div>
 

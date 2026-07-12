@@ -5,6 +5,7 @@ Repositorio del roadmap IR21 Core y su Gantt interactiva en tiempo real.
 ## URLs
 
 - Roadmap en GitHub: https://github.com/loreto2888/Roadmap-IR21-Automatizaci-n-Core
+- Gantt pública: https://loreto2888.github.io/Roadmap-IR21-Automatizaci-n-Core/
 - Código de la Gantt: https://github.com/loreto2888/Roadmap-IR21-Automatizaci-n-Core/tree/main/gantt-tiempo-real
 - Gantt local: http://localhost:5173/
 
