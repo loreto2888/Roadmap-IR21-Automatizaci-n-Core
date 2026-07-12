@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useEffect, useState } from 'react'
+import { Fragment, startTransition, useDeferredValue, useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import readXlsxFile from 'read-excel-file/browser'
 import {
@@ -22,6 +22,7 @@ type Task = {
   owner: string
   start: string
   end: string
+  duration?: string
   dependency: string
   progress: number
   status: Status
@@ -30,54 +31,85 @@ type Task = {
 }
 
 const todayIso = '2026-07-12'
-const storageKey = 'ir21-gantt-live-v2'
+const storageKey = 'ir21-gantt-live-v3'
+
+function statusFromDates(start: string, end: string): Status {
+  if (toDate(end) < toDate(todayIso)) return 'Listo'
+  if (toDate(start) <= toDate(todayIso)) return 'En curso'
+  return 'Pendiente'
+}
+
+function projectTask(
+  id: string,
+  title: string,
+  phase: string,
+  duration: string,
+  start: string,
+  end: string,
+  dependency = '',
+): Task {
+  return {
+    id,
+    title,
+    phase,
+    owner: '',
+    start,
+    end,
+    duration,
+    dependency,
+    progress: statusFromDates(start, end) === 'Listo' ? 100 : statusFromDates(start, end) === 'En curso' ? 40 : 0,
+    status: statusFromDates(start, end),
+    source: 'Proyecto IR21',
+  }
+}
 
 const initialTasks: Task[] = [
-  { id: '0.1', title: 'Comité Ejecutivo', phase: '0 Gestión', owner: 'Comité', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 55, status: 'En curso', cadence: 'Quincenal', source: '0_Gestion' },
-  { id: '0.2', title: 'Comité Táctico', phase: '0 Gestión', owner: 'Comité', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 55, status: 'En curso', cadence: 'Quincenal', source: '0_Gestion' },
-  { id: '0.3', title: 'Mesa Técnica', phase: '0 Gestión', owner: 'Equipo técnico', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 58, status: 'En curso', cadence: 'Semanal', source: '0_Gestion' },
-  { id: '0.4', title: 'Gestión de Riesgos y Dependencias', phase: '0 Gestión', owner: 'PMO', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 52, status: 'En curso', cadence: 'Semanal', source: '0_Gestion' },
-  { id: '0.5', title: 'Seguimiento de Accesos e Infraestructura', phase: '0 Gestión', owner: 'PMO', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 48, status: 'En curso', cadence: 'Semanal', source: '0_Gestion' },
-  { id: '0.6', title: 'Reporte Estado Proyecto', phase: '0 Gestión', owner: 'PMO', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 55, status: 'En curso', cadence: 'Semanal', source: '0_Gestion' },
-  { id: '0.7', title: 'Presentación Ejecutiva', phase: '0 Gestión', owner: 'PMO', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 42, status: 'En curso', cadence: 'Quincenal', source: '0_Gestion' },
-  { id: '0.8', title: 'Gestión de Stakeholders', phase: '0 Gestión', owner: 'PMO', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 56, status: 'En curso', cadence: 'Continua', source: '0_Gestion' },
-  { id: '0.9', title: 'Coordinación Entel – Intellicore', phase: '0 Gestión', owner: 'Entel + Intellicore', start: '2026-04-21', end: '2026-10-16', dependency: '', progress: 57, status: 'En curso', cadence: 'Continua', source: '0_Gestion' },
-  { id: '1.1', title: 'Reunión Levantamiento Inicial Core O&M', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-04-21', end: '2026-04-21', dependency: '', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.2', title: 'Reunión Levantamiento Core Voz', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-05-07', end: '2026-05-07', dependency: '1.1', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.3', title: 'Reunión Definición Automatización Core', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-05-14', end: '2026-05-14', dependency: '1.2', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.4', title: 'Revisión Arquitectura y Gobierno', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-01', end: '2026-06-01', dependency: '1.3', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.5', title: 'Revisión Stack Tecnológico', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-02', end: '2026-06-02', dependency: '1.4', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.6', title: 'Definición Capacidades Plataforma', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-03', end: '2026-06-03', dependency: '1.5', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.7', title: 'Revisión Integraciones y Observabilidad', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-04', end: '2026-06-04', dependency: '1.6', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.8', title: 'Revisión Backlog y Casos de Uso', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-05', end: '2026-06-05', dependency: '1.7', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.9', title: 'Revisión Modelo Operativo', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-09', end: '2026-06-09', dependency: '1.8', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.10', title: 'Reunión Tecnologías Disponibles', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-11', end: '2026-06-11', dependency: '1.9', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.11', title: 'Reunión Integración OSVI', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-12', end: '2026-06-12', dependency: '1.10', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.12', title: 'Reunión PSG', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-15', end: '2026-06-15', dependency: '1.11', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '1.13', title: 'Revisión GitLab / Bitbucket', phase: '1 Levantamiento', owner: 'Entel + Intellicore', start: '2026-06-22', end: '2026-06-22', dependency: '1.12', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: 'H-01', title: 'Hito: Levantamiento Finalizado', phase: '1 Levantamiento', owner: 'PMO', start: '2026-06-22', end: '2026-06-22', dependency: '1.13', progress: 100, status: 'Listo', source: '1_Levantamiento' },
-  { id: '2.1', title: 'Definir Modelo de Gobernanza', phase: '2 Arquitectura', owner: 'Entel + Intellicore', start: '2026-06-23', end: '2026-06-26', dependency: 'H-01', progress: 100, status: 'Listo', source: '2_a_8_Fases' },
-  { id: '2.2', title: 'Confirmar Responsable de Aprobación PR', phase: '2 Arquitectura', owner: 'Entel', start: '2026-06-29', end: '2026-07-01', dependency: '2.1', progress: 100, status: 'Listo', source: '2_a_8_Fases' },
-  { id: '2.3', title: 'Definir Rol Administrador Entel', phase: '2 Arquitectura', owner: 'Entel', start: '2026-06-29', end: '2026-07-01', dependency: '2.1', progress: 100, status: 'Listo', source: '2_a_8_Fases' },
-  { id: '2.4', title: 'Validar Estructura Repositorio Centralizado', phase: '2 Arquitectura', owner: 'Entel + Intellicore', start: '2026-07-02', end: '2026-07-06', dependency: '2.3', progress: 80, status: 'En curso', source: '2_a_8_Fases' },
-  { id: '2.5', title: 'Definir Stack Tecnológico', phase: '2 Arquitectura', owner: 'Entel + Intellicore', start: '2026-07-07', end: '2026-07-09', dependency: '2.4', progress: 65, status: 'En curso', source: '2_a_8_Fases' },
-  { id: '2.6', title: 'Arquitectura HLD', phase: '2 Arquitectura', owner: 'Intellicore', start: '2026-07-10', end: '2026-07-15', dependency: '2.5', progress: 30, status: 'En curso', source: '2_a_8_Fases' },
-  { id: '2.7', title: 'Validación Arquitectura Entel', phase: '2 Arquitectura', owner: 'Entel', start: '2026-07-16', end: '2026-07-17', dependency: '2.6', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: 'H-02', title: 'Hito: Arquitectura Aprobada', phase: '2 Arquitectura', owner: 'PMO', start: '2026-07-17', end: '2026-07-17', dependency: '2.7', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '3.1', title: 'Acceso a Servidor', phase: '3 Infraestructura', owner: 'Entel', start: '2026-07-20', end: '2026-07-24', dependency: 'H-02', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '3.12', title: 'Cuentas Sistémicas PAM', phase: '3 Infraestructura', owner: 'Entel', start: '2026-07-27', end: '2026-07-31', dependency: '3.7', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-03', title: 'Hito: Infraestructura y Accesos Disponibles', phase: '3 Infraestructura', owner: 'PMO', start: '2026-07-31', end: '2026-07-31', dependency: '3.12', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '4.7', title: 'Definición MVP', phase: '4 MVP', owner: 'PO + Entel', start: '2026-08-03', end: '2026-08-07', dependency: '4.6', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-04', title: 'Hito: MVP Definido', phase: '4 MVP', owner: 'PMO', start: '2026-08-07', end: '2026-08-07', dependency: '4.7', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '5.9', title: 'Definir uso de n8n', phase: '5 Plataforma', owner: 'Intellicore', start: '2026-08-10', end: '2026-08-21', dependency: '5.4', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-05', title: 'Hito: Plataforma Base Disponible', phase: '5 Plataforma', owner: 'PMO', start: '2026-08-21', end: '2026-08-21', dependency: '5.9', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '6.9', title: 'Piloto Operacional', phase: '6 Piloto', owner: 'Entel + Intellicore', start: '2026-08-24', end: '2026-09-04', dependency: '6.8', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-06', title: 'Hito: Piloto Aprobado', phase: '6 Piloto', owner: 'PMO', start: '2026-09-04', end: '2026-09-04', dependency: '6.9', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '7.12', title: 'Definir Plan Formal de Capacitación', phase: '7 Capacitación', owner: 'Intellicore', start: '2026-09-07', end: '2026-09-18', dependency: '7.11', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-07', title: 'Hito: Capacitación Finalizada', phase: '7 Capacitación', owner: 'PMO', start: '2026-09-18', end: '2026-09-18', dependency: '7.12', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
-  { id: '8.5', title: 'Paso a Producción', phase: '8 Producción', owner: 'Entel + Intellicore', start: '2026-09-21', end: '2026-10-02', dependency: '8.4', progress: 0, status: 'Bloqueado', source: '2_a_8_Fases' },
-  { id: 'H-08', title: 'Hito: Proyecto Operativo', phase: '8 Producción', owner: 'PMO', start: '2026-10-02', end: '2026-10-02', dependency: '8.5', progress: 0, status: 'Pendiente', source: '2_a_8_Fases' },
+  projectTask('2', 'Gestión, seguimiento y control del proyecto', '0. Gestión y Gobierno del Proyecto', '98 días', '2026-07-13', '2026-11-30'),
+  projectTask('3', 'Gobernanza, riesgos, dependencias y comités', '0. Gestión y Gobierno del Proyecto', '101 días', '2026-07-08', '2026-11-30'),
+  projectTask('4', '◆ Hito: Gobernanza Operativa', '0. Gestión y Gobierno del Proyecto', '0 días', '2026-11-30', '2026-11-30', '2;3'),
+  projectTask('7', 'Kickoff, alcance y levantamiento de requerimientos', '1. Inicio y Planificación', '52 días', '2026-04-13', '2026-06-23'),
+  projectTask('8', 'Planificación, backlog, roadmap y cronograma', '1. Inicio y Planificación', '21 días', '2026-06-11', '2026-07-10'),
+  projectTask('9', '◆ Hito: Plan del Proyecto Aprobado', '1. Inicio y Planificación', '1 día', '2026-07-13', '2026-07-13', '7;8'),
+  projectTask('11', 'Diseño HLD y arquitectura de la solución', '2. Arquitectura y Diseño', '30 días', '2026-04-20', '2026-05-29'),
+  projectTask('12', 'Validaciones técnicas y arquitectura objetivo', '2. Arquitectura y Diseño', '30 días', '2026-06-01', '2026-07-13', '11'),
+  projectTask('13', '◆ Hito: Arquitectura y solución validada', '2. Arquitectura y Diseño', '0 días', '2026-07-13', '2026-07-13', '11;12'),
+  projectTask('15', 'Entrega VM', '3. Infraestructura y Accesos', '40 días', '2026-04-27', '2026-06-19'),
+  projectTask('16', 'Implementación de infraestructura, red y almacenamiento', '3. Infraestructura y Accesos', '30 días', '2026-06-22', '2026-08-04', '15'),
+  projectTask('17', '◆ Hito: Infraestructura disponible', '3. Infraestructura y Accesos', '0 días', '2026-08-04', '2026-08-04', '15;16'),
+  projectTask('19', 'Desarrollo de integración IR21–OSVI', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-05', '2026-08-18', '14'),
+  projectTask('20', 'Desarrollo de integración IR21–PSG', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-19', '2026-09-01', '19'),
+  projectTask('21', 'Desarrollo de integración IR21–Firewall', '4. Integración IR21 – OSVI / PSG / Firewall', '15 días', '2026-09-02', '2026-09-23', '20'),
+  projectTask('22', '◆ Hito: Integración Implementada IR21', '4. Integración IR21 – OSVI / PSG / Firewall', '0 días', '2026-09-23', '2026-09-23', '19;20;21'),
+  projectTask('24', 'Configuración de Splunk y monitoreo', '5. Observabilidad y Monitoreo', '10 días', '2026-09-02', '2026-09-15', '20'),
+  projectTask('25', 'Dashboards, alertas e indicadores', '5. Observabilidad y Monitoreo', '15 días', '2026-09-16', '2026-10-07', '24'),
+  projectTask('26', '◆ Hito: Observabilidad Operativa', '5. Observabilidad y Monitoreo', '0 días', '2026-06-26', '2026-06-26'),
+  projectTask('28', 'Pruebas funcionales, técnicas e integración', '6. Pruebas y Validaciones', '10 días', '2026-10-08', '2026-10-22', '18;23'),
+  projectTask('29', 'Corrección de incidencias y UAT', '6. Pruebas y Validaciones', '15 días', '2026-10-23', '2026-11-12', '28'),
+  projectTask('30', '◆ Hito: UAT Aprobada', '6. Pruebas y Validaciones', '0 días', '2026-11-12', '2026-11-12', '28;29'),
+  projectTask('32', 'Documentación técnica, operativa y manuales', '7. Documentación y Transferencia', '10 días', '2026-10-08', '2026-10-22', '23'),
+  projectTask('33', 'Capacitación y transferencia al equipo operativo', '7. Documentación y Transferencia', '5 días', '2026-10-23', '2026-10-29', '32'),
+  projectTask('34', '◆ Hito: Documentación Aprobada', '7. Documentación y Transferencia', '0 días', '2026-10-22', '2026-10-22', '32'),
+  projectTask('36', 'Despliegue y Go Live', '8. Implementación Productiva', '2 días', '2026-11-13', '2026-11-16', '27'),
+  projectTask('37', 'Estabilización y soporte post implementación', '8. Implementación Productiva', '2 días', '2026-11-17', '2026-11-18', '36'),
+  projectTask('38', 'Marcha Blanca', '8. Implementación Productiva', '5 días', '2026-11-19', '2026-11-25', '36;37'),
+  projectTask('39', '◆ Hito: Go Live Exitoso', '8. Implementación Productiva', '0 días', '2026-11-25', '2026-11-25', '36;37;38'),
+  projectTask('41', 'Cierre administrativo y técnico', '9. Cierre del Proyecto', '2 días', '2026-11-26', '2026-11-27', '39'),
+  projectTask('42', 'Aceptación formal', '9. Cierre del Proyecto', '1 día', '2026-11-30', '2026-11-30', '41'),
+  projectTask('43', '◆ Hito: Proyecto Cerrado', '9. Cierre del Proyecto', '0 días', '2026-11-30', '2026-11-30', '41;42'),
 ]
+
+const phaseSummaries: Record<string, { duration: string; start: string; end: string }> = {
+  '0. Gestión y Gobierno del Proyecto': { duration: '101 días', start: '2026-07-08', end: '2026-11-30' },
+  '1. Inicio y Planificación': { duration: '65 días', start: '2026-04-13', end: '2026-07-13' },
+  '2. Arquitectura y Diseño': { duration: '60 días', start: '2026-04-20', end: '2026-07-13' },
+  '3. Infraestructura y Accesos': { duration: '70 días', start: '2026-04-27', end: '2026-08-04' },
+  '4. Integración IR21 – OSVI / PSG / Firewall': { duration: '35 días', start: '2026-08-05', end: '2026-09-23' },
+  '5. Observabilidad y Monitoreo': { duration: '71 días', start: '2026-06-26', end: '2026-10-07' },
+  '6. Pruebas y Validaciones': { duration: '25 días', start: '2026-10-08', end: '2026-11-12' },
+  '7. Documentación y Transferencia': { duration: '15 días', start: '2026-10-08', end: '2026-10-29' },
+  '8. Implementación Productiva': { duration: '9 días', start: '2026-11-13', end: '2026-11-25' },
+  '9. Cierre del Proyecto': { duration: '3 días', start: '2026-11-26', end: '2026-11-30' },
+}
 
 const statusOptions: Status[] = ['Pendiente', 'En curso', 'Bloqueado', 'Listo']
 
@@ -119,9 +151,20 @@ function formatExcelDate(iso: string) {
   return `${day}-${month}-${year}`
 }
 
+function formatProjectDate(iso: string) {
+  const weekdays = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+  const date = toDate(iso)
+  const [year, month, day] = iso.split('-')
+  return `${weekdays[date.getDay()]} ${day}-${month}-${year.slice(2)}`
+}
+
 function durationLabel(start: string, end: string) {
   const days = diffDays(start, end)
   return `${days} ${days === 1 ? 'día' : 'días'}`
+}
+
+function taskDuration(task: Task) {
+  return task.duration ?? durationLabel(task.start, task.end)
 }
 
 function getThirdLabel(task: Task) {
@@ -143,7 +186,7 @@ function getDependencyLabel(task: Task) {
 
 function getDependencyValue(task: Task) {
   if (task.dependency) return task.dependency
-  return getDependencyLabel(task) === 'Dependencia' ? 'Sin dependencia' : '-'
+  return ''
 }
 
 function normalizePhase(id: string, source: string) {
@@ -416,47 +459,58 @@ function App() {
               <span>Cronograma</span>
             </div>
             {groupedTasks.map((group) => (
-              <section className="phase-group" key={group.phase}>
-                <div className="phase-summary">
-                  <span>▸ {group.phase}</span>
-                  <span>{durationLabel(group.tasks[0].start, group.tasks[group.tasks.length - 1].end)}</span>
-                  <span>{formatExcelDate(group.tasks[0].start)}</span>
-                  <span>{formatExcelDate(group.tasks[group.tasks.length - 1].end)}</span>
-                  <span />
-                  <span />
-                </div>
-                {group.tasks.map((task) => {
-                  const left = (diffDays(timelineStart, task.start) / totalDays) * 100
-                  const width = Math.max(0.8, (Math.max(1, diffDays(task.start, task.end) + 1) / totalDays) * 100)
-                  const isSelected = selectedTask?.id === task.id
+              <Fragment key={group.phase}>
+                {group.phase === '1. Inicio y Planificación' && (
+                  <div className="phase-summary parent-summary">
+                    <span>▸ Desarrollo IR21</span>
+                    <span>162 días</span>
+                    <span>{formatProjectDate('2026-04-13')}</span>
+                    <span>{formatProjectDate('2026-11-30')}</span>
+                    <span />
+                    <span />
+                  </div>
+                )}
+                <section className="phase-group">
+                  <div className="phase-summary">
+                    <span>▸ {group.phase}</span>
+                    <span>{phaseSummaries[group.phase]?.duration ?? durationLabel(group.tasks[0].start, group.tasks[group.tasks.length - 1].end)}</span>
+                    <span>{formatProjectDate(phaseSummaries[group.phase]?.start ?? group.tasks[0].start)}</span>
+                    <span>{formatProjectDate(phaseSummaries[group.phase]?.end ?? group.tasks[group.tasks.length - 1].end)}</span>
+                    <span />
+                    <span />
+                  </div>
+                  {group.tasks.map((task) => {
+                    const left = (diffDays(timelineStart, task.start) / totalDays) * 100
+                    const width = Math.max(0.8, (Math.max(1, diffDays(task.start, task.end) + 1) / totalDays) * 100)
+                    const isSelected = selectedTask?.id === task.id
 
-                  return (
-                    <button
-                      type="button"
-                      key={task.id}
-                      className={`gantt-row ${isSelected ? 'selected' : ''}`}
-                      onClick={() => setSelectedId(task.id)}
-                    >
-                      <span className="task-copy">
-                        <b>{task.id}</b>
-                        <span>{task.title}</span>
-                      </span>
-                      <span className="duration-meta">{durationLabel(task.start, task.end)}</span>
-                      <span className="date-meta">{formatExcelDate(task.start)}</span>
-                      <span className="date-meta">{formatExcelDate(task.end)}</span>
-                      <span className="predecessor-meta">{getDependencyValue(task)}</span>
-                      <span className="rail">
-                        <span
-                          className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}
-                          style={{ left: `${left}%`, width: `${width}%` }}
-                        >
-                          <span style={{ width: `${task.progress}%` }} />
+                    return (
+                      <button
+                        type="button"
+                        key={task.id}
+                        className={`gantt-row ${isSelected ? 'selected' : ''}`}
+                        onClick={() => setSelectedId(task.id)}
+                      >
+                        <span className="task-copy">
+                          <span>{task.title}</span>
                         </span>
-                      </span>
-                    </button>
-                  )
-                })}
-              </section>
+                        <span className="duration-meta">{taskDuration(task)}</span>
+                        <span className="date-meta">{formatProjectDate(task.start)}</span>
+                        <span className="date-meta">{formatProjectDate(task.end)}</span>
+                        <span className="predecessor-meta">{getDependencyValue(task)}</span>
+                        <span className="rail">
+                          <span
+                            className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}
+                            style={{ left: `${left}%`, width: `${width}%` }}
+                          >
+                            <span style={{ width: `${task.progress}%` }} />
+                          </span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                </section>
+              </Fragment>
             ))}
           </div>
         </div>
