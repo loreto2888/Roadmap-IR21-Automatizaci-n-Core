@@ -24,6 +24,7 @@ type Task = {
   start: string
   end: string
   duration?: string
+  completed?: boolean
   dependency: string
   progress: number
   status: Status
@@ -32,7 +33,7 @@ type Task = {
 }
 
 const todayIso = '2026-07-12'
-const storageKey = 'ir21-gantt-live-v4'
+const storageKey = 'ir21-gantt-live-v5'
 
 function statusFromDates(start: string, end: string): Status {
   if (toDate(end) < toDate(todayIso)) return 'Listo'
@@ -76,7 +77,7 @@ const initialTasks: Task[] = [
   projectTask('11', 'Diseño HLD y arquitectura de la solución', '2. Arquitectura y Diseño', '30 días', '2026-04-20', '2026-05-29', '', 'Intellicore'),
   projectTask('12', 'Validaciones técnicas y arquitectura objetivo', '2. Arquitectura y Diseño', '30 días', '2026-06-01', '2026-07-13', '11', 'Intellicore'),
   projectTask('13', '◆ Hito: Arquitectura y solución validada', '2. Arquitectura y Diseño', '0 días', '2026-07-13', '2026-07-13', '11;12', 'Intellicore-Entel'),
-  projectTask('15', 'Entrega VM', '3. Infraestructura y Accesos', '40 días', '2026-04-27', '2026-06-19', '', 'Entel'),
+  { ...projectTask('15', 'Entrega VM', '3. Infraestructura y Accesos', '40 días', '2026-04-27', '2026-06-19', '', 'Entel'), completed: true, progress: 100, status: 'Listo' },
   projectTask('16', 'Implementación de infraestructura, red y almacenamiento', '3. Infraestructura y Accesos', '30 días', '2026-06-22', '2026-08-04', '15', 'Intellicore-Entel'),
   projectTask('17', '◆ Hito: Infraestructura disponible', '3. Infraestructura y Accesos', '0 días', '2026-08-04', '2026-08-04', '15;16', 'Intellicore-Entel'),
   projectTask('19', 'Desarrollo de integración IR21–OSVI', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-05', '2026-08-18', '14', 'Intellicore'),
@@ -168,6 +169,19 @@ function durationLabel(start: string, end: string) {
 
 function taskDuration(task: Task) {
   return task.duration ?? durationLabel(task.start, task.end)
+}
+
+function formatLiveDateTime(date: Date) {
+  return new Intl.DateTimeFormat('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date)
 }
 
 function getThirdLabel(task: Task) {
@@ -295,11 +309,17 @@ function App() {
   const [statusFilter, setStatusFilter] = useState('Todos')
   const [query, setQuery] = useState('')
   const [message, setMessage] = useState('Datos iniciales cargados desde Gantt_IR21_Core_Proyecto_20260624.xlsx')
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date())
   const deferredQuery = useDeferredValue(query)
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const phases = ['Todas', ...Array.from(new Set(tasks.map((task) => task.phase)))]
   const statuses = ['Todos', ...statusOptions]
@@ -312,8 +332,8 @@ function App() {
     const matchesStatus = statusFilter === 'Todos' || task.status === statusFilter
     return matchesQuery && matchesPhase && matchesStatus
   })
-  const overdueTasks = visibleTasks.filter((task) => toDate(task.end) < toDate(todayIso))
-  const regularTasks = visibleTasks.filter((task) => toDate(task.end) >= toDate(todayIso))
+  const overdueTasks = visibleTasks.filter((task) => toDate(task.end) < toDate(todayIso) && !task.completed)
+  const regularTasks = visibleTasks.filter((task) => toDate(task.end) >= toDate(todayIso) || task.completed)
   const overdueStart = overdueTasks.reduce((min, task) => (toDate(task.start) < toDate(min) ? task.start : min), overdueTasks[0]?.start ?? todayIso)
   const overdueEnd = overdueTasks.reduce((max, task) => (toDate(task.end) > toDate(max) ? task.end : max), overdueTasks[0]?.end ?? todayIso)
   const groupedTasks = Array.from(new Set(regularTasks.map((task) => task.phase))).map((phase) => ({
@@ -325,10 +345,25 @@ function App() {
   const timelineStart = addDays(minStart, -3)
   const timelineEnd = addDays(maxEnd, 7)
   const totalDays = Math.max(1, diffDays(timelineStart, timelineEnd))
-  const completed = Math.round(tasks.reduce((sum, task) => sum + task.progress, 0) / Math.max(tasks.length, 1))
-  const blocked = tasks.filter((task) => task.status === 'Bloqueado').length
-  const milestones = tasks.filter((task) => task.id.startsWith('H-')).length
   const todayOffset = (diffDays(timelineStart, todayIso) / totalDays) * 100
+  const todoTasks = tasks.filter((task) => toDate(task.start) > toDate(todayIso))
+  const inProgressTasks = tasks.filter((task) => toDate(task.start) <= toDate(todayIso) && toDate(task.end) >= toDate(todayIso))
+  const overdueAllTasks = tasks.filter((task) => toDate(task.end) < toDate(todayIso) && !task.completed)
+  const totalPercent = 100
+  const todoPercent = Math.round((todoTasks.length / Math.max(tasks.length, 1)) * 100)
+  const inProgressPercent = Math.round((inProgressTasks.length / Math.max(tasks.length, 1)) * 100)
+  const overduePercent = Math.round((overdueAllTasks.length / Math.max(tasks.length, 1)) * 100)
+  const overdueResourceNames = Array.from(new Set(overdueAllTasks.map((task) => task.resource || 'Sin asignar')))
+  const overdueByResource = overdueResourceNames.map((resource) => {
+    const resourceTasks = overdueAllTasks.filter((task) => (task.resource || 'Sin asignar') === resource)
+    const taskCount = new Set(resourceTasks.map((task) => task.id)).size
+    return {
+      resource,
+      taskCount,
+      percent: Math.round((taskCount / Math.max(overdueAllTasks.length, 1)) * 100),
+      tasks: resourceTasks.map((task) => task.title).join('; '),
+    }
+  })
 
   function updateTask(id: string, patch: Partial<Task>) {
     setTasks((current) =>
@@ -382,6 +417,10 @@ function App() {
           <p>{message}</p>
         </div>
         <div className="top-actions">
+          <div className="live-clock" aria-label="Fecha y hora actual">
+            <span>Fecha y hora</span>
+            <strong>{formatLiveDateTime(currentDateTime)}</strong>
+          </div>
           <label className="icon-button" title="Importar Excel">
             <Upload size={18} />
             <span>Importar</span>
@@ -408,21 +447,45 @@ function App() {
 
       <section className="kpis" aria-label="Resumen del proyecto">
         <article>
-          <span>Tareas</span>
+          <span>Total de tareas</span>
           <strong>{tasks.length}</strong>
+          <small>{totalPercent}%</small>
         </article>
         <article>
-          <span>Avance promedio</span>
-          <strong>{completed}%</strong>
+          <span>Por hacer</span>
+          <strong>{todoTasks.length}</strong>
+          <small>{todoPercent}%</small>
         </article>
         <article>
-          <span>Bloqueadas</span>
-          <strong>{blocked}</strong>
+          <span>En curso</span>
+          <strong>{inProgressTasks.length}</strong>
+          <small>{inProgressPercent}%</small>
         </article>
-        <article>
-          <span>Hitos</span>
-          <strong>{milestones}</strong>
+        <article className="warning-kpi">
+          <span>Atrasadas</span>
+          <strong>{overdueAllTasks.length}</strong>
+          <small>{overduePercent}%</small>
         </article>
+      </section>
+
+      <section className="overdue-table" aria-label="Responsables con tareas atrasadas">
+        <div className="overdue-table-title">
+          <span>Atrasadas por responsable</span>
+        </div>
+        <div className="overdue-table-header">
+          <span>Nombre</span>
+          <span>%</span>
+          <span>Cantidad de tareas</span>
+          <span>Tareas</span>
+        </div>
+        {overdueByResource.map((item) => (
+          <div className="overdue-table-row" key={item.resource}>
+            <span>{item.resource}</span>
+            <strong>{item.percent}%</strong>
+            <span>{item.taskCount}</span>
+            <span>{item.tasks}</span>
+          </div>
+        ))}
       </section>
 
       <section className="workspace">

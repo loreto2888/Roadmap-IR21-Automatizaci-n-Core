@@ -77,6 +77,33 @@
   padding: 0;
 }
 
+.live-clock {
+  min-width: 260px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--soft-shadow);
+  text-align: left;
+}
+
+.live-clock span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.live-clock strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.15;
+}
+
 .icon-button input {
   position: absolute;
   inline-size: 1px;
@@ -114,6 +141,95 @@
   color: var(--text);
   font-size: 32px;
   line-height: 1;
+}
+
+.kpis small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.kpis .warning-kpi strong {
+  color: var(--today);
+}
+
+@media (max-width: 1180px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.overdue-table {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: -4px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--soft-shadow);
+}
+
+.overdue-table-title,
+.overdue-table-header,
+.overdue-table-row {
+  display: grid;
+  grid-template-columns: 190px 70px 140px minmax(260px, 1fr);
+  align-items: center;
+}
+
+.overdue-table-title {
+  grid-template-columns: 1fr;
+  background: #fff2ec;
+  color: #9f3c23;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.overdue-table-header {
+  background: #eef3f0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.overdue-table-row {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.overdue-table-row span:last-child {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.overdue-table-title span,
+.overdue-table-header span,
+.overdue-table-row span,
+.overdue-table-row strong {
+  min-height: 34px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.overdue-table-row strong {
+  color: var(--today);
+}
+
+.overdue-table-title span,
+.overdue-table-header span:last-child,
+.overdue-table-row span:last-child {
+  border-right: 0;
+}
+
+.overdue-table-row:last-child span,
+.overdue-table-row:last-child strong {
+  border-bottom: 0;
 }
 
 .workspace {
