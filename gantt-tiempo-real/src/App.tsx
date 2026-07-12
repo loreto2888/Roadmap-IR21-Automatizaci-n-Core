@@ -20,6 +20,7 @@ type Task = {
   title: string
   phase: string
   owner: string
+  resource?: string
   start: string
   end: string
   duration?: string
@@ -31,7 +32,7 @@ type Task = {
 }
 
 const todayIso = '2026-07-12'
-const storageKey = 'ir21-gantt-live-v3'
+const storageKey = 'ir21-gantt-live-v4'
 
 function statusFromDates(start: string, end: string): Status {
   if (toDate(end) < toDate(todayIso)) return 'Listo'
@@ -47,12 +48,14 @@ function projectTask(
   start: string,
   end: string,
   dependency = '',
+  resource = '',
 ): Task {
   return {
     id,
     title,
     phase,
     owner: '',
+    resource,
     start,
     end,
     duration,
@@ -64,38 +67,38 @@ function projectTask(
 }
 
 const initialTasks: Task[] = [
-  projectTask('2', 'Gestión, seguimiento y control del proyecto', '0. Gestión y Gobierno del Proyecto', '98 días', '2026-07-13', '2026-11-30'),
-  projectTask('3', 'Gobernanza, riesgos, dependencias y comités', '0. Gestión y Gobierno del Proyecto', '101 días', '2026-07-08', '2026-11-30'),
-  projectTask('4', '◆ Hito: Gobernanza Operativa', '0. Gestión y Gobierno del Proyecto', '0 días', '2026-11-30', '2026-11-30', '2;3'),
-  projectTask('7', 'Kickoff, alcance y levantamiento de requerimientos', '1. Inicio y Planificación', '52 días', '2026-04-13', '2026-06-23'),
-  projectTask('8', 'Planificación, backlog, roadmap y cronograma', '1. Inicio y Planificación', '21 días', '2026-06-11', '2026-07-10'),
-  projectTask('9', '◆ Hito: Plan del Proyecto Aprobado', '1. Inicio y Planificación', '1 día', '2026-07-13', '2026-07-13', '7;8'),
-  projectTask('11', 'Diseño HLD y arquitectura de la solución', '2. Arquitectura y Diseño', '30 días', '2026-04-20', '2026-05-29'),
-  projectTask('12', 'Validaciones técnicas y arquitectura objetivo', '2. Arquitectura y Diseño', '30 días', '2026-06-01', '2026-07-13', '11'),
-  projectTask('13', '◆ Hito: Arquitectura y solución validada', '2. Arquitectura y Diseño', '0 días', '2026-07-13', '2026-07-13', '11;12'),
-  projectTask('15', 'Entrega VM', '3. Infraestructura y Accesos', '40 días', '2026-04-27', '2026-06-19'),
-  projectTask('16', 'Implementación de infraestructura, red y almacenamiento', '3. Infraestructura y Accesos', '30 días', '2026-06-22', '2026-08-04', '15'),
-  projectTask('17', '◆ Hito: Infraestructura disponible', '3. Infraestructura y Accesos', '0 días', '2026-08-04', '2026-08-04', '15;16'),
-  projectTask('19', 'Desarrollo de integración IR21–OSVI', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-05', '2026-08-18', '14'),
-  projectTask('20', 'Desarrollo de integración IR21–PSG', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-19', '2026-09-01', '19'),
-  projectTask('21', 'Desarrollo de integración IR21–Firewall', '4. Integración IR21 – OSVI / PSG / Firewall', '15 días', '2026-09-02', '2026-09-23', '20'),
-  projectTask('22', '◆ Hito: Integración Implementada IR21', '4. Integración IR21 – OSVI / PSG / Firewall', '0 días', '2026-09-23', '2026-09-23', '19;20;21'),
-  projectTask('24', 'Configuración de Splunk y monitoreo', '5. Observabilidad y Monitoreo', '10 días', '2026-09-02', '2026-09-15', '20'),
-  projectTask('25', 'Dashboards, alertas e indicadores', '5. Observabilidad y Monitoreo', '15 días', '2026-09-16', '2026-10-07', '24'),
-  projectTask('26', '◆ Hito: Observabilidad Operativa', '5. Observabilidad y Monitoreo', '0 días', '2026-06-26', '2026-06-26'),
-  projectTask('28', 'Pruebas funcionales, técnicas e integración', '6. Pruebas y Validaciones', '10 días', '2026-10-08', '2026-10-22', '18;23'),
-  projectTask('29', 'Corrección de incidencias y UAT', '6. Pruebas y Validaciones', '15 días', '2026-10-23', '2026-11-12', '28'),
-  projectTask('30', '◆ Hito: UAT Aprobada', '6. Pruebas y Validaciones', '0 días', '2026-11-12', '2026-11-12', '28;29'),
-  projectTask('32', 'Documentación técnica, operativa y manuales', '7. Documentación y Transferencia', '10 días', '2026-10-08', '2026-10-22', '23'),
-  projectTask('33', 'Capacitación y transferencia al equipo operativo', '7. Documentación y Transferencia', '5 días', '2026-10-23', '2026-10-29', '32'),
-  projectTask('34', '◆ Hito: Documentación Aprobada', '7. Documentación y Transferencia', '0 días', '2026-10-22', '2026-10-22', '32'),
-  projectTask('36', 'Despliegue y Go Live', '8. Implementación Productiva', '2 días', '2026-11-13', '2026-11-16', '27'),
-  projectTask('37', 'Estabilización y soporte post implementación', '8. Implementación Productiva', '2 días', '2026-11-17', '2026-11-18', '36'),
-  projectTask('38', 'Marcha Blanca', '8. Implementación Productiva', '5 días', '2026-11-19', '2026-11-25', '36;37'),
+  projectTask('2', 'Gestión, seguimiento y control del proyecto', '0. Gestión y Gobierno del Proyecto', '98 días', '2026-07-13', '2026-11-30', '', 'Intellicore-Entel'),
+  projectTask('3', 'Gobernanza, riesgos, dependencias y comités', '0. Gestión y Gobierno del Proyecto', '101 días', '2026-07-08', '2026-11-30', '', 'Intellicore-Entel'),
+  projectTask('4', '◆ Hito: Gobernanza Operativa', '0. Gestión y Gobierno del Proyecto', '0 días', '2026-11-30', '2026-11-30', '2;3', 'Intellicore-Entel'),
+  projectTask('7', 'Kickoff, alcance y levantamiento de requerimientos', '1. Inicio y Planificación', '52 días', '2026-04-13', '2026-06-23', '', 'Intellicore-Entel'),
+  projectTask('8', 'Planificación, backlog, roadmap y cronograma', '1. Inicio y Planificación', '21 días', '2026-06-11', '2026-07-10', '', 'Intellicore-Entel'),
+  projectTask('9', '◆ Hito: Plan del Proyecto Aprobado', '1. Inicio y Planificación', '1 día', '2026-07-13', '2026-07-13', '7;8', 'Intellicore-Entel'),
+  projectTask('11', 'Diseño HLD y arquitectura de la solución', '2. Arquitectura y Diseño', '30 días', '2026-04-20', '2026-05-29', '', 'Intellicore'),
+  projectTask('12', 'Validaciones técnicas y arquitectura objetivo', '2. Arquitectura y Diseño', '30 días', '2026-06-01', '2026-07-13', '11', 'Intellicore'),
+  projectTask('13', '◆ Hito: Arquitectura y solución validada', '2. Arquitectura y Diseño', '0 días', '2026-07-13', '2026-07-13', '11;12', 'Intellicore-Entel'),
+  projectTask('15', 'Entrega VM', '3. Infraestructura y Accesos', '40 días', '2026-04-27', '2026-06-19', '', 'Entel'),
+  projectTask('16', 'Implementación de infraestructura, red y almacenamiento', '3. Infraestructura y Accesos', '30 días', '2026-06-22', '2026-08-04', '15', 'Intellicore-Entel'),
+  projectTask('17', '◆ Hito: Infraestructura disponible', '3. Infraestructura y Accesos', '0 días', '2026-08-04', '2026-08-04', '15;16', 'Intellicore-Entel'),
+  projectTask('19', 'Desarrollo de integración IR21–OSVI', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-05', '2026-08-18', '14', 'Intellicore'),
+  projectTask('20', 'Desarrollo de integración IR21–PSG', '4. Integración IR21 – OSVI / PSG / Firewall', '10 días', '2026-08-19', '2026-09-01', '19', 'Intellicore'),
+  projectTask('21', 'Desarrollo de integración IR21–Firewall', '4. Integración IR21 – OSVI / PSG / Firewall', '15 días', '2026-09-02', '2026-09-23', '20', 'Intellicore'),
+  projectTask('22', '◆ Hito: Integración Implementada IR21', '4. Integración IR21 – OSVI / PSG / Firewall', '0 días', '2026-09-23', '2026-09-23', '19;20;21', 'Intellicore-Entel'),
+  projectTask('24', 'Configuración de Splunk y monitoreo', '5. Observabilidad y Monitoreo', '10 días', '2026-09-02', '2026-09-15', '20', 'Intellicore'),
+  projectTask('25', 'Dashboards, alertas e indicadores', '5. Observabilidad y Monitoreo', '15 días', '2026-09-16', '2026-10-07', '24', 'Intellicore'),
+  projectTask('26', '◆ Hito: Observabilidad Operativa', '5. Observabilidad y Monitoreo', '0 días', '2026-06-26', '2026-06-26', '', 'Intellicore'),
+  projectTask('28', 'Pruebas funcionales, técnicas e integración', '6. Pruebas y Validaciones', '10 días', '2026-10-08', '2026-10-22', '18;23', 'Intellicore'),
+  projectTask('29', 'Corrección de incidencias y UAT', '6. Pruebas y Validaciones', '15 días', '2026-10-23', '2026-11-12', '28', 'Intellicore'),
+  projectTask('30', '◆ Hito: UAT Aprobada', '6. Pruebas y Validaciones', '0 días', '2026-11-12', '2026-11-12', '28;29', 'Intellicore-Entel'),
+  projectTask('32', 'Documentación técnica, operativa y manuales', '7. Documentación y Transferencia', '10 días', '2026-10-08', '2026-10-22', '23', 'Intellicore'),
+  projectTask('33', 'Capacitación y transferencia al equipo operativo', '7. Documentación y Transferencia', '5 días', '2026-10-23', '2026-10-29', '32', 'Intellicore'),
+  projectTask('34', '◆ Hito: Documentación Aprobada', '7. Documentación y Transferencia', '0 días', '2026-10-22', '2026-10-22', '32', 'Intellicore-Entel'),
+  projectTask('36', 'Despliegue y Go Live', '8. Implementación Productiva', '2 días', '2026-11-13', '2026-11-16', '27', 'Entel'),
+  projectTask('37', 'Estabilización y soporte post implementación', '8. Implementación Productiva', '2 días', '2026-11-17', '2026-11-18', '36', 'Intellicore-Entel'),
+  projectTask('38', 'Marcha Blanca', '8. Implementación Productiva', '5 días', '2026-11-19', '2026-11-25', '36;37', 'Entel'),
   projectTask('39', '◆ Hito: Go Live Exitoso', '8. Implementación Productiva', '0 días', '2026-11-25', '2026-11-25', '36;37;38'),
-  projectTask('41', 'Cierre administrativo y técnico', '9. Cierre del Proyecto', '2 días', '2026-11-26', '2026-11-27', '39'),
-  projectTask('42', 'Aceptación formal', '9. Cierre del Proyecto', '1 día', '2026-11-30', '2026-11-30', '41'),
-  projectTask('43', '◆ Hito: Proyecto Cerrado', '9. Cierre del Proyecto', '0 días', '2026-11-30', '2026-11-30', '41;42'),
+  projectTask('41', 'Cierre administrativo y técnico', '9. Cierre del Proyecto', '2 días', '2026-11-26', '2026-11-27', '39', 'Entel'),
+  projectTask('42', 'Aceptación formal', '9. Cierre del Proyecto', '1 día', '2026-11-30', '2026-11-30', '41', 'Entel'),
+  projectTask('43', '◆ Hito: Proyecto Cerrado', '9. Cierre del Proyecto', '0 días', '2026-11-30', '2026-11-30', '41;42', 'Entel'),
 ]
 
 const phaseSummaries: Record<string, { duration: string; start: string; end: string }> = {
@@ -303,15 +306,19 @@ function App() {
   const owners = Array.from(new Set(tasks.filter((task) => getThirdLabel(task) === 'Responsable').map((task) => task.owner).filter(Boolean)))
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? tasks[0]
   const visibleTasks = tasks.filter((task) => {
-    const haystack = `${task.id} ${task.title} ${task.owner} ${task.phase} ${getThirdValue(task)} ${getDependencyValue(task)}`.toLowerCase()
+    const haystack = `${task.id} ${task.title} ${task.resource ?? ''} ${task.owner} ${task.phase} ${getThirdValue(task)} ${getDependencyValue(task)}`.toLowerCase()
     const matchesQuery = haystack.includes(deferredQuery.toLowerCase())
     const matchesPhase = phaseFilter === 'Todas' || task.phase === phaseFilter
     const matchesStatus = statusFilter === 'Todos' || task.status === statusFilter
     return matchesQuery && matchesPhase && matchesStatus
   })
-  const groupedTasks = Array.from(new Set(visibleTasks.map((task) => task.phase))).map((phase) => ({
+  const overdueTasks = visibleTasks.filter((task) => toDate(task.end) < toDate(todayIso))
+  const regularTasks = visibleTasks.filter((task) => toDate(task.end) >= toDate(todayIso))
+  const overdueStart = overdueTasks.reduce((min, task) => (toDate(task.start) < toDate(min) ? task.start : min), overdueTasks[0]?.start ?? todayIso)
+  const overdueEnd = overdueTasks.reduce((max, task) => (toDate(task.end) > toDate(max) ? task.end : max), overdueTasks[0]?.end ?? todayIso)
+  const groupedTasks = Array.from(new Set(regularTasks.map((task) => task.phase))).map((phase) => ({
     phase,
-    tasks: visibleTasks.filter((task) => task.phase === phase),
+    tasks: regularTasks.filter((task) => task.phase === phase),
   }))
   const minStart = tasks.reduce((min, task) => (toDate(task.start) < toDate(min) ? task.start : min), tasks[0]?.start ?? todayIso)
   const maxEnd = tasks.reduce((max, task) => (toDate(task.end) > toDate(max) ? task.end : max), tasks[0]?.end ?? todayIso)
@@ -456,8 +463,53 @@ function App() {
               <span>Comienzo</span>
               <span>Fin</span>
               <span>Predecesoras</span>
+              <span>Nombres de los recursos</span>
               <span>Cronograma</span>
             </div>
+            {overdueTasks.length > 0 && (
+              <section className="phase-group overdue-group">
+                <div className="phase-summary overdue-summary">
+                  <span>▸ Atrasadas</span>
+                  <span>{overdueTasks.length} tareas</span>
+                  <span>{formatProjectDate(overdueStart)}</span>
+                  <span>{formatProjectDate(overdueEnd)}</span>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                {overdueTasks.map((task) => {
+                  const left = (diffDays(timelineStart, task.start) / totalDays) * 100
+                  const width = Math.max(0.8, (Math.max(1, diffDays(task.start, task.end) + 1) / totalDays) * 100)
+                  const isSelected = selectedTask?.id === task.id
+
+                  return (
+                    <button
+                      type="button"
+                      key={`overdue-${task.id}`}
+                      className={`gantt-row overdue-row ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedId(task.id)}
+                    >
+                      <span className="task-copy">
+                        <span>{task.title}</span>
+                      </span>
+                      <span className="duration-meta">{taskDuration(task)}</span>
+                      <span className="date-meta">{formatProjectDate(task.start)}</span>
+                      <span className="date-meta">{formatProjectDate(task.end)}</span>
+                      <span className="predecessor-meta">{getDependencyValue(task)}</span>
+                      <span className="resource-meta">{task.resource ?? ''}</span>
+                      <span className="rail">
+                        <span
+                          className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        >
+                          <span style={{ width: `${task.progress}%` }} />
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </section>
+            )}
             {groupedTasks.map((group) => (
               <Fragment key={group.phase}>
                 {group.phase === '1. Inicio y Planificación' && (
@@ -468,6 +520,7 @@ function App() {
                     <span>{formatProjectDate('2026-11-30')}</span>
                     <span />
                     <span />
+                    <span />
                   </div>
                 )}
                 <section className="phase-group">
@@ -476,6 +529,7 @@ function App() {
                     <span>{phaseSummaries[group.phase]?.duration ?? durationLabel(group.tasks[0].start, group.tasks[group.tasks.length - 1].end)}</span>
                     <span>{formatProjectDate(phaseSummaries[group.phase]?.start ?? group.tasks[0].start)}</span>
                     <span>{formatProjectDate(phaseSummaries[group.phase]?.end ?? group.tasks[group.tasks.length - 1].end)}</span>
+                    <span />
                     <span />
                     <span />
                   </div>
@@ -498,6 +552,7 @@ function App() {
                         <span className="date-meta">{formatProjectDate(task.start)}</span>
                         <span className="date-meta">{formatProjectDate(task.end)}</span>
                         <span className="predecessor-meta">{getDependencyValue(task)}</span>
+                        <span className="resource-meta">{task.resource ?? ''}</span>
                         <span className="rail">
                           <span
                             className={`bar ${task.status.toLowerCase().replace(' ', '-')}`}

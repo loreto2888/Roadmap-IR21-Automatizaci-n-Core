@@ -191,7 +191,7 @@ input[type='range'] {
 .timeline-meta {
   display: flex;
   justify-content: space-between;
-  padding: 0 14px 8px 720px;
+  padding: 0 14px 8px 870px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
@@ -207,7 +207,7 @@ input[type='range'] {
 .gantt::before {
   content: '';
   position: absolute;
-  inset: 0 0 0 700px;
+  inset: 0 0 0 850px;
   pointer-events: none;
   background-image: repeating-linear-gradient(90deg, transparent 0, transparent 64px, rgba(38, 63, 82, 0.08) 65px);
 }
@@ -216,7 +216,7 @@ input[type='range'] {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc(700px + (100% - 700px) * var(--today-left) / 100);
+  left: calc(850px + (100% - 850px) * var(--today-left) / 100);
   z-index: 2;
   width: 2px;
   background: var(--today);
@@ -241,7 +241,7 @@ input[type='range'] {
 .phase-summary,
 .gantt-row {
   display: grid;
-  grid-template-columns: 360px 90px 90px 90px 110px minmax(260px, 1fr);
+  grid-template-columns: 360px 90px 90px 90px 110px 150px minmax(260px, 1fr);
   align-items: center;
 }
 
@@ -249,7 +249,7 @@ input[type='range'] {
   position: sticky;
   top: 0;
   z-index: 4;
-  min-width: 1120px;
+  min-width: 1270px;
   border: 1px solid var(--border);
   border-radius: 8px 8px 0 0;
   background: #eef3f0;
@@ -276,7 +276,7 @@ input[type='range'] {
 .phase-group {
   position: relative;
   z-index: 1;
-  min-width: 1120px;
+  min-width: 1270px;
   margin-bottom: 0;
 }
 
@@ -290,11 +290,16 @@ input[type='range'] {
   font-weight: 900;
 }
 
+.overdue-summary {
+  background: #fff2ec;
+  color: #9f3c23;
+}
+
 .gantt-row {
   position: relative;
   z-index: 1;
   width: 100%;
-  min-width: 1120px;
+  min-width: 1270px;
   min-height: 42px;
   margin-bottom: 0;
   border: 0;
@@ -313,6 +318,10 @@ input[type='range'] {
   background: rgba(223, 242, 236, 0.9);
 }
 
+.overdue-row {
+  background: rgba(255, 247, 242, 0.9);
+}
+
 .task-copy {
   box-sizing: border-box;
 }
@@ -322,6 +331,7 @@ input[type='range'] {
 .date-meta,
 .duration-meta,
 .predecessor-meta,
+.resource-meta,
 .row-meta {
   display: block;
   overflow: hidden;
@@ -341,6 +351,7 @@ input[type='range'] {
 
 .duration-meta,
 .predecessor-meta,
+.resource-meta,
 .date-meta {
   color: var(--text);
   font-size: 13px;
